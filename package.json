@@ -13,7 +13,17 @@
 		"onStartupFinished"
 	],
 	"main": "./out/extension.js",
-	"contributes": {},
+	"contributes": {
+		"views": {
+			"explorer": [
+				{
+					"id": "codeBlocks",
+					"name": "STM32 CodeBlocks",
+					"icon": "media/STM32.png"
+				}
+			]
+		}
+	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",

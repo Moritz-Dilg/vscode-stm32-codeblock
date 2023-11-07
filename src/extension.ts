@@ -1,17 +1,21 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import ViewProvider from "./view";
 
-interface CodeBlock {
-	[key: string]: {
-		start: number;
-		end: number;
-	};
+export interface CodeBlock {
+	name: string;
+	start: number;
+	end: number;
 };
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	// Register the tree view
+	const viewProvider = new ViewProvider(context);
+	vscode.window.registerTreeDataProvider('codeBlocks', viewProvider);
+
 	// Update codeBlock when text changes
 	const changeTextDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
 		const editor = vscode.window.activeTextEditor;
@@ -22,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const documentContent = document.getText();
 		const codeBlocks = getCodeBlocks(documentContent);
-		console.log(codeBlocks);
+		viewProvider.updateCodeBlocks(codeBlocks);
 	});
 
 	context.subscriptions.push(changeTextDisposable);
@@ -36,8 +40,14 @@ export function deactivate() { }
  * @param documentContent Document content
  * @returns The code blocks in the document
  */
-function getCodeBlocks(documentContent: string): CodeBlock {
-	const codeBlocks: CodeBlock = {};
+function getCodeBlocks(documentContent: string): CodeBlock[] {
+	interface CodeBlocks {
+		[name: string]: {
+			start: number;
+			end: number;
+		};
+	}
+	const codeBlocks: CodeBlocks = {};
 	const regexBegin = /\/\*\s*USER CODE BEGIN (\w+)\s*\*\//g;
 	const regexEnd = /\/\*\s*USER CODE END (\w+)\s*\*\//g;
 
@@ -62,6 +72,6 @@ function getCodeBlocks(documentContent: string): CodeBlock {
 		lineNumber++;
 	}
 
-	return codeBlocks;
+	return Object.entries(codeBlocks).map(([name, { start, end }]) => ({ name, start, end })).sort((a, b) => a.start - b.start);;
 }
 
