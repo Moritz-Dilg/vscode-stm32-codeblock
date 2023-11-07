@@ -29,6 +29,12 @@ export function activate(context: vscode.ExtensionContext) {
 		viewProvider.updateCodeBlocks(codeBlocks);
 	});
 
+	const jumpToDisposable = vscode.commands.registerCommand('stm32-codeblock.jumpTo', (codeBlock: CodeBlock) => {
+		const range = new vscode.Range(codeBlock.start, 0, codeBlock.end, 0);
+		vscode.window.activeTextEditor?.revealRange(range, vscode.TextEditorRevealType.InCenter);
+	});
+
+	context.subscriptions.push(jumpToDisposable);
 	context.subscriptions.push(changeTextDisposable);
 }
 
