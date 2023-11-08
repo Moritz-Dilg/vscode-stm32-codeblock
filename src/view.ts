@@ -16,7 +16,7 @@ export default class ViewProvider implements vscode.TreeDataProvider<CodeBlock> 
 
 	getTreeItem(element: CodeBlock): vscode.TreeItem | Thenable<vscode.TreeItem> {
 		const treeItem = new vscode.TreeItem(element.name);
-		treeItem.description = `(${element.start}, ${element.end})`;
+		treeItem.description = `(${element.startLine}, ${element.endLine})`;
 		treeItem.command = {
 			command: 'stm32-codeblock.jumpTo',
 			title: 'Jump to code block',
