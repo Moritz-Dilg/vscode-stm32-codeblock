@@ -16,6 +16,33 @@ export function activate(context: vscode.ExtensionContext) {
 	const viewProvider = new ViewProvider(context);
 	vscode.window.registerTreeDataProvider('codeBlocks', viewProvider);
 
+	const defaultBorderDecorationOptoins = {
+		borderStyle: 'solid',
+		overviewRulerColor: '#0000',
+		light: {
+			borderColor: '#23272e'
+		},
+		dark: {
+			borderColor: '#abb2bf'
+		}
+	};
+
+	const decorationTypeLeftBar = vscode.window.createTextEditorDecorationType({
+		borderWidth: '0px 0px 0px 1px', ...defaultBorderDecorationOptoins
+	});
+
+	const decorationTypeTopComment = vscode.window.createTextEditorDecorationType({
+		borderWidth: '0px 0px 1px 0px', ...defaultBorderDecorationOptoins
+	});
+
+	const decorationTypeBottomComment = vscode.window.createTextEditorDecorationType({
+		borderWidth: '1px 0px 0px 0px', ...defaultBorderDecorationOptoins
+	});
+
+	const decorationTypeBackgroundCode = vscode.window.createTextEditorDecorationType({
+		opacity: '.7'
+	});
+
 	// Update codeBlock when text changes
 	const changeTextDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
 		const editor = vscode.window.activeTextEditor;
@@ -27,6 +54,27 @@ export function activate(context: vscode.ExtensionContext) {
 		const documentContent = document.getText();
 		const codeBlocks = getCodeBlocks(documentContent);
 		viewProvider.updateCodeBlocks(codeBlocks);
+
+
+		editor.setDecorations(decorationTypeTopComment, codeBlocks.map(({ start }) => {
+			return new vscode.Range(start - 1, 0, start, 0);
+		}));
+
+		editor.setDecorations(decorationTypeBottomComment, codeBlocks.map(({ end }) => {
+			return new vscode.Range(end - 1, 0, end - 1, 1);
+		}));
+
+		editor.setDecorations(decorationTypeLeftBar, codeBlocks.map(({ start, end }) => {
+			return new vscode.Range(start, 0, end - 2, 0);
+		}));
+
+		let range: vscode.Range[] = [];
+		for (let i = 0; i < codeBlocks.length; i++) {
+			if (i == 0) range.push(new vscode.Range(0, 0, codeBlocks[i].start - 1, 0));
+			else range.push(new vscode.Range(codeBlocks[i - 1].end - 1, 0, codeBlocks[i].start - 1, 0));
+		}
+
+		editor.setDecorations(decorationTypeBackgroundCode, range);
 	});
 
 	const jumpToDisposable = vscode.commands.registerCommand('stm32-codeblock.jumpTo', (codeBlock: CodeBlock) => {
