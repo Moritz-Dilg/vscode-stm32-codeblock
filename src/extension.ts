@@ -42,8 +42,15 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	const jumpToDisposable = vscode.commands.registerCommand('stm32-codeblock.jumpTo', (codeBlock: CodeBlock) => {
-		const range = new vscode.Range(codeBlock.startLine, 0, codeBlock.endLine, 0);
-		vscode.window.activeTextEditor?.revealRange(range, vscode.TextEditorRevealType.InCenter);
+		if (vscode.window.activeTextEditor) {
+			const cursorPosition = new vscode.Position(codeBlock.startLine, 0);
+			const range = new vscode.Range(codeBlock.startLine, 0, codeBlock.endLine, 0);
+
+			vscode.window.activeTextEditor.selection = new vscode.Selection(cursorPosition, cursorPosition);
+			vscode.window.activeTextEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+
+			vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
+		}
 	});
 
 	context.subscriptions.push(jumpToDisposable);
