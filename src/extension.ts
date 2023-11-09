@@ -18,6 +18,12 @@ export function activate(context: vscode.ExtensionContext) {
 	const viewProvider = new ViewProvider(context);
 	vscode.window.registerTreeDataProvider('codeBlocks', viewProvider);
 
+	// Update codeBlock when opening vscode initially
+	if (vscode.window.activeTextEditor) {
+		const document = vscode.window.activeTextEditor.document;
+		update(document, vscode.window.activeTextEditor, viewProvider);
+	}
+
 	// Update codeBlock when editor changes
 	const changeEditorDisposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
 		if (!editor) return;
