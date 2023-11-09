@@ -1,8 +1,10 @@
 {
 	"name": "stm32-codeblock",
 	"displayName": "STM32 CodeBlock",
-	"description": "",
-	"version": "0.0.1",
+	"description": "Highlight STM32 User CodeBlocks in VSCode",
+	"version": "1.0.0",
+	"repository": "https://github.com/Moritz-Dilg/vscode-stm32-codeblock",
+	"license": "MIT",
 	"engines": {
 		"vscode": "^1.84.0"
 	},
