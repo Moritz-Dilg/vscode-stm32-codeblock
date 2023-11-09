@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import ViewProvider from "./view";
+import { decorationTypeBackgroundCode, decorationTypeBottomComment, decorationTypeLeftBar, decorationTypeNameHighlight, decorationTypeTopComment } from "./decorationTypes";
 
 export interface CodeBlock {
 	name: string;
@@ -17,44 +18,12 @@ export function activate(context: vscode.ExtensionContext) {
 	const viewProvider = new ViewProvider(context);
 	vscode.window.registerTreeDataProvider('codeBlocks', viewProvider);
 
-	const defaultBorderDecorationOptoins = {
-		borderStyle: 'solid',
-		overviewRulerColor: '#0000',
-		light: {
-			borderColor: '#23272e'
-		},
-		dark: {
-			borderColor: '#abb2bf'
-		}
-	};
+	// Update codeBlock when editor changes
+	const changeEditorDisposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
+		if (!editor) return;
 
-	const decorationTypeLeftBar = vscode.window.createTextEditorDecorationType({
-		borderWidth: '0px 0px 0px 1px', ...defaultBorderDecorationOptoins
-	});
-
-	const decorationTypeTopComment = vscode.window.createTextEditorDecorationType({
-		borderWidth: '0px 0px 1px 0px', ...defaultBorderDecorationOptoins
-	});
-
-	const decorationTypeBottomComment = vscode.window.createTextEditorDecorationType({
-		borderWidth: '1px 0px 0px 0px', ...defaultBorderDecorationOptoins
-	});
-
-	const decorationTypeBackgroundCode = vscode.window.createTextEditorDecorationType({
-		opacity: '.7'
-	});
-
-	const decorationTypeNameHighlight = vscode.window.createTextEditorDecorationType({
-		fontWeight: 'bold',
-		borderRadius: '5px 5px 0px 0px',
-		light: {
-			backgroundColor: '#23272e',
-			color: '#ccd1db',
-		},
-		dark: {
-			backgroundColor: '#abb2bf',
-			color: '#23272e',
-		}
+		const document = editor.document;
+		update(document, editor, viewProvider);
 	});
 
 	// Update codeBlock when text changes
@@ -63,35 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (!editor) return;
 
 		const document = event.document;
-		if (document.languageId !== 'c' && document.languageId !== 'cpp') return;
-
-		const documentContent = document.getText();
-		const codeBlocks = getCodeBlocks(documentContent);
-		viewProvider.updateCodeBlocks(codeBlocks);
-
-
-		editor.setDecorations(decorationTypeTopComment, codeBlocks.map(({ startLine: start }) => {
-			return new vscode.Range(start - 1, 0, start, 0);
-		}));
-
-		editor.setDecorations(decorationTypeBottomComment, codeBlocks.map(({ endLine: end }) => {
-			return new vscode.Range(end - 1, 0, end - 1, 1);
-		}));
-
-		editor.setDecorations(decorationTypeLeftBar, codeBlocks.map(({ startLine: start, endLine: end }) => {
-			return new vscode.Range(start, 0, end - 2, 0);
-		}));
-
-		let range: vscode.Range[] = [];
-		for (let i = 0; i < codeBlocks.length; i++) {
-			if (i == 0) range.push(new vscode.Range(0, 0, codeBlocks[i].startLine - 1, 0));
-			else range.push(new vscode.Range(codeBlocks[i - 1].endLine - 1, 0, codeBlocks[i].startLine - 1, 0));
-		}
-		editor.setDecorations(decorationTypeBackgroundCode, range);
-
-		editor.setDecorations(decorationTypeNameHighlight, codeBlocks.map((codeBlock) => {
-			return new vscode.Range(codeBlock.startLine - 1, codeBlock.startChar - 1, codeBlock.startLine - 1, codeBlock.startChar + codeBlock.name.length + 1);
-		}));
+		update(document, editor, viewProvider);
 	});
 
 	const jumpToDisposable = vscode.commands.registerCommand('stm32-codeblock.jumpTo', (codeBlock: CodeBlock) => {
@@ -100,11 +41,50 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(jumpToDisposable);
+	context.subscriptions.push(changeEditorDisposable);
 	context.subscriptions.push(changeTextDisposable);
 }
 
 // This method is called when your extension is deactivated
 export function deactivate() { }
+
+/**
+ * Update the code blocks in the tree view and the decorations in the editor
+ * @param document The current working document
+ * @param editor The current working editor
+ * @param viewProvider An {@link ViewProvider} instance to display the code blocks in the tree view
+ */
+function update(document: vscode.TextDocument, editor: vscode.TextEditor, viewProvider: ViewProvider) {
+	if (document.languageId !== 'c' && document.languageId !== 'cpp') return;
+
+	const documentContent = document.getText();
+	const codeBlocks = getCodeBlocks(documentContent);
+	viewProvider.updateCodeBlocks(codeBlocks);
+
+
+	editor.setDecorations(decorationTypeTopComment, codeBlocks.map(({ startLine: start }) => {
+		return new vscode.Range(start - 1, 0, start, 0);
+	}));
+
+	editor.setDecorations(decorationTypeBottomComment, codeBlocks.map(({ endLine: end }) => {
+		return new vscode.Range(end - 1, 0, end - 1, 1);
+	}));
+
+	editor.setDecorations(decorationTypeLeftBar, codeBlocks.map(({ startLine: start, endLine: end }) => {
+		return new vscode.Range(start, 0, end - 2, 0);
+	}));
+
+	let range: vscode.Range[] = [];
+	for (let i = 0; i < codeBlocks.length; i++) {
+		if (i == 0) range.push(new vscode.Range(0, 0, codeBlocks[i].startLine - 1, 0));
+		else range.push(new vscode.Range(codeBlocks[i - 1].endLine - 1, 0, codeBlocks[i].startLine - 1, 0));
+	}
+	editor.setDecorations(decorationTypeBackgroundCode, range);
+
+	editor.setDecorations(decorationTypeNameHighlight, codeBlocks.map((codeBlock) => {
+		return new vscode.Range(codeBlock.startLine - 1, codeBlock.startChar - 1, codeBlock.startLine - 1, codeBlock.startChar + codeBlock.name.length + 1);
+	}));
+}
 
 /**
  * Get the code blocks in the document
