@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { CodeBlock } from "./extension";
+import { dictionary } from "./dictionary";
 
 export default class ViewProvider implements vscode.TreeDataProvider<CodeBlock> {
 	private codeBlocks: CodeBlock[] = [];
@@ -15,7 +16,11 @@ export default class ViewProvider implements vscode.TreeDataProvider<CodeBlock> 
 	onDidChangeTreeData?: vscode.Event<CodeBlock | void | CodeBlock[] | null | undefined> | undefined = this.onDidChangeTreeDataEmitter.event;
 
 	getTreeItem(element: CodeBlock): vscode.TreeItem | Thenable<vscode.TreeItem> {
-		const treeItem = new vscode.TreeItem(element.name);
+		let label = element.name;
+		if (dictionary[element.name]) {
+			label += ` - ${dictionary[element.name]}`;
+		}
+		const treeItem = new vscode.TreeItem(label);
 		treeItem.description = `(${element.startLine}, ${element.endLine})`;
 		treeItem.command = {
 			command: 'stm32-codeblock.jumpTo',
